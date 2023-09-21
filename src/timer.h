@@ -20,8 +20,11 @@ public:
     void loop();
     void start();
     void stop();
+    bool isRunning();
     void setTime(uint16_t seconds);
+    uint16_t getTimePreset();
     void setMode(uint8_t mode);
+    uint8_t getMode();
     uint16_t getTimeRemaining();
     uint16_t getTimeElapsed();
     void registerOnExpiredHandler(void (*callback)());

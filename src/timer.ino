@@ -3,67 +3,76 @@
 #include <TM1650.h>
 #include "timer.h"
 #include "button.h"
+#include "buttonPair.h"
 
-#define PIN_BTN_MIN 4
-#define PIN_BTN_SEC_10 7
-#define PIN_BTN_SEC_1 8
-#define PIN_BTN_FUNC A0
+#define PIN_BTN_A 4
+#define PIN_BTN_B 7
+#define PIN_BTN_C 8
+#define PIN_BTN_D A0
 #define PIN_BUZZER 3
 
-Button buttonMinutes(PIN_BTN_MIN, onButtonMinutesPressed);
-Button buttonSeconds10(PIN_BTN_SEC_10, onButtonSeconds10Pressed);
-Button buttonSeconds1(PIN_BTN_SEC_1, onButtonSeconds1Pressed);
-Button buttonFunc(PIN_BTN_FUNC, onButtonFuncPressed);
+Button buttonA(PIN_BTN_A, onButtonAPressed);
+Button buttonB(PIN_BTN_B, onButtonBPressed);
+Button buttonC(PIN_BTN_C, onButtonCPressed);
+Button buttonD(PIN_BTN_D, onButtonDPressed);
+ButtonPair buttonAC(PIN_BTN_A, PIN_BTN_C, onButtonACPressed);
 
 Timer timer;
 
 TM1650 display;
 
-uint16_t presetSeconds = 0;
-bool running = false;
-
-void onButtonMinutesPressed()
+void onButtonACPressed()
 {
-    if (!running)
+    if (timer.isRunning())
     {
-        presetSeconds += 60;
+        timer.stop();
+    }
+
+    timer.setTime(0);
+}
+
+void onButtonAPressed()
+{
+    if (!timer.isRunning())
+    {
+        timer.setTime(timer.getTimePreset() + 60);
     }
 }
 
-void onButtonSeconds10Pressed()
+void onButtonBPressed()
 {
-    if (!running)
+    if (!timer.isRunning())
     {
-        presetSeconds += 10;
+        timer.setTime(timer.getTimePreset() + 10);
     }
 }
 
-void onButtonSeconds1Pressed()
+void onButtonCPressed()
 {
-    if (!running)
+    if (!timer.isRunning())
     {
-        presetSeconds += 1;
+        timer.setTime(timer.getTimePreset() + 1);
     }
 }
-void onButtonFuncPressed()
+void onButtonDPressed()
 {
-    if (!running)
+    if (!timer.isRunning())
     {
-        running = true;
-        timer.setTime(presetSeconds);
+        timer.setMode(timer.getTimePreset() > 0 ? MODE_COUNT_DOWN : MODE_COUNT_UP);
         timer.start();
     }
     else
     {
-        running = false;
+        timer.setTime(0);
         timer.stop();
     }
 }
 
 void onTimerExpired()
 {
-    running = false;
     printSeconds(0);
+    timer.setTime(0);
+
     for (uint8_t ix = 0; ix < 4; ix++)
     {
         digitalWrite(PIN_BUZZER, HIGH);
@@ -91,8 +100,14 @@ void printSeconds(uint16_t totalSeconds)
 
     char buf[5];
 
+    bool dotOn = true;
+    if (timer.isRunning() && millis() % 1000 < 500)
+    {
+        dotOn = false;
+    }
+
     buf[0] = (char)('0' + (minutes / 10));
-    buf[1] = (char)('0' + (minutes % 10)) | 128;
+    buf[1] = (char)('0' + (minutes % 10)) | (dotOn ? 128 : 0);
     buf[2] = (char)('0' + (seconds / 10));
     buf[3] = (char)('0' + (seconds % 10));
     buf[4] = 0;
@@ -101,19 +116,27 @@ void printSeconds(uint16_t totalSeconds)
 }
 
 void loop()
-{    
-    buttonMinutes.loop();
-    buttonSeconds10.loop();
-    buttonSeconds1.loop();
-    buttonFunc.loop();
+{
+    buttonA.loop();
+    buttonB.loop();
+    buttonC.loop();
+    buttonD.loop();
+    buttonAC.loop();
 
-    if (!running)
+    if (!timer.isRunning())
     {
-        printSeconds(presetSeconds);
+        printSeconds(timer.getTimePreset());
     }
     else
     {
-        printSeconds(timer.getTimeRemaining());
+        if (timer.getMode() == MODE_COUNT_DOWN)
+        {
+            printSeconds(timer.getTimeRemaining());
+        }
+        else
+        {
+            printSeconds(timer.getTimeElapsed());
+        }
     }
 
     timer.loop();

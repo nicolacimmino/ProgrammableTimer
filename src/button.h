@@ -1,4 +1,5 @@
 
+
 #ifndef __BUTTON_H__
 #define __BUTTON_H__
 
@@ -12,7 +13,7 @@ private:
     bool released;
 
 public:
-    Button(uint8_t pin, void (*callback)());
+    Button(uint8_t pin, void (*callback)());    
     void loop();        
 };
 

@@ -29,7 +29,7 @@ void Timer::start()
 }
 
 void Timer::stop()
-{
+{    
     this->startTimeMs = 0;
 }
 
@@ -50,6 +50,11 @@ void Timer::registerOnExpiredHandler(void (*callback)())
 
 uint16_t Timer::getTimeRemaining()
 {
+    if (this->mode == MODE_COUNT_UP)
+    {
+        return 0;
+    }
+
     uint16_t timeElapsed = this->getTimeElapsed();
 
     if (timeElapsed > this->timeS)
@@ -73,4 +78,14 @@ uint16_t Timer::getTimeElapsed()
 bool Timer::isRunning()
 {
     return (this->startTimeMs != 0);
+}
+
+uint16_t Timer::getTimePreset()
+{
+    return this->timeS;
+}
+
+uint8_t Timer::getMode()
+{
+    return this->mode;
 }
