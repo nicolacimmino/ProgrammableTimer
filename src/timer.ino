@@ -68,8 +68,14 @@ void onButtonDPressed()
     }
     else
     {
-        timer.setTime(0);
-        timer.stop();
+        if (!timer.isPaused())
+        {
+            timer.pause();
+        }
+        else
+        {
+            timer.start();
+        }
     }
 }
 
@@ -105,6 +111,10 @@ void printSeconds(uint16_t totalSeconds)
 
     bool dotOn = true;
     if (timer.isRunning() && millis() % 1000 < 500)
+    {
+        dotOn = false;
+    }
+    if (timer.isPaused() && millis() % 1000 < 900)
     {
         dotOn = false;
     }

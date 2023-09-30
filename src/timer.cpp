@@ -6,6 +6,11 @@ Timer::Timer()
     this->mode = MODE_COUNT_DOWN;
 }
 
+bool Timer::isPaused()
+{
+    return this->pauseTimeMs != 0;
+}
+
 void Timer::loop()
 {
     if (!this->isRunning())
@@ -25,12 +30,27 @@ void Timer::loop()
 
 void Timer::start()
 {
+    if (this->isPaused())
+    {
+        this->startTimeMs += millis() - this->pauseTimeMs;
+        this->pauseTimeMs = 0;
+
+        return;
+    }
+
     this->startTimeMs = millis();
+    this->pauseTimeMs = 0;
 }
 
 void Timer::stop()
-{    
+{
     this->startTimeMs = 0;
+    this->pauseTimeMs = 0;
+}
+
+void Timer::pause()
+{
+    this->pauseTimeMs = millis();
 }
 
 void Timer::setTime(uint16_t seconds)
@@ -72,7 +92,14 @@ uint16_t Timer::getTimeElapsed()
         return 0;
     }
 
-    return (millis() - this->startTimeMs) / 1000;
+    unsigned long timeElapsed = (millis() - this->startTimeMs);
+
+    if (this->isPaused())
+    {
+        timeElapsed -= millis() - this->pauseTimeMs;
+    }
+
+    return timeElapsed / 1000;
 }
 
 bool Timer::isRunning()
