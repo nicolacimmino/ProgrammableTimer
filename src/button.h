@@ -13,8 +13,9 @@ private:
     bool released;
 
 public:
-    Button(uint8_t pin, void (*callback)());    
+    Button(uint8_t pin, void (*callback)());        
     void loop();        
+    bool isPressed();
 };
 
 #endif

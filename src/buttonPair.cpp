@@ -22,7 +22,7 @@ void ButtonPair::loop()
         this->released = false;
     }
 
-    if (digitalRead(this->pinA) == HIGH || digitalRead(this->pinB) == HIGH)
+    if (digitalRead(this->pinA) == HIGH && digitalRead(this->pinB) == HIGH)
     {
         this->released = true;
     }

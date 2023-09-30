@@ -25,3 +25,8 @@ void Button::loop()
         this->released = true;
     }
 }
+
+bool Button::isPressed()
+{
+    return digitalRead(this->pin) == LOW;
+}

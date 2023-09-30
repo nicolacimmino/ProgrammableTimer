@@ -9,6 +9,7 @@
 #define PIN_BTN_C 8
 #define PIN_BTN_D A0
 #define PIN_BUZZER 3
+#define PIN_LED A2
 
 #define DISPLAY_CLK 6
 #define DISPLAY_DIO 5
@@ -19,12 +20,16 @@ Button buttonB(PIN_BTN_B, onButtonBPressed);
 Button buttonC(PIN_BTN_C, onButtonCPressed);
 Button buttonD(PIN_BTN_D, onButtonDPressed);
 ButtonPair buttonAC(PIN_BTN_A, PIN_BTN_C, onButtonACPressed);
+ButtonPair buttonAB(PIN_BTN_A, PIN_BTN_B, onButtonABPressed);
 
 Timer timer;
 
 TM1637Display display(DISPLAY_CLK, DISPLAY_DIO);
 
 uint8_t displayData[] = {0xff, 0xff, 0xff, 0xff};
+
+bool mute = false;
+bool buttonPairAction = false;
 
 void onButtonACPressed()
 {
@@ -34,6 +39,39 @@ void onButtonACPressed()
     }
 
     timer.setTime(0);
+
+    buttonPairAction = true;
+}
+
+void onButtonABPressed()
+{
+    mute = !mute;
+
+    if (mute)
+    {
+        displayData[0] = 0b00111111; // O
+        displayData[1] = 0b01110001; // F
+        displayData[2] = 0b01110001; // F
+        displayData[3] = 0b00000000;
+    }
+    else
+    {
+        displayData[0] = 0b00111111; // O
+        displayData[1] = 0b00110111; // N
+        displayData[2] = 0b00000000;
+        displayData[3] = 0b00000000;
+    }
+
+    display.setSegments(displayData);
+    delay(1000);
+
+    displayData[0] = 0b00000000;
+    displayData[1] = 0b00000000;
+    displayData[2] = 0b00000000;
+    displayData[3] = 0b00000000;
+    display.setSegments(displayData);
+
+    buttonPairAction = true;
 }
 
 void onButtonAPressed()
@@ -84,12 +122,28 @@ void onTimerExpired()
     printSeconds(0);
     timer.setTime(0);
 
-    for (uint8_t ix = 0; ix < 4; ix++)
+    unsigned long buzzStart = millis();
+    unsigned long buzzingTime = 0;
+    while ((buzzingTime = (millis() - buzzStart)) <= 4000)
     {
-        digitalWrite(PIN_BUZZER, HIGH);
-        delay(200);
-        digitalWrite(PIN_BUZZER, LOW);
-        delay(500);
+        if ((buzzingTime / 1000) % 2 == 0)
+        {
+            digitalWrite(PIN_BUZZER, mute ? LOW : HIGH);
+            digitalWrite(PIN_LED, HIGH);
+            delay(10);
+            digitalWrite(PIN_BUZZER, LOW);
+            digitalWrite(PIN_LED, LOW);
+            delay(20);
+        }
+
+        if (buttonA.isPressed() || buttonB.isPressed() || buttonC.isPressed() || buttonD.isPressed())
+        {
+            while (buttonA.isPressed() || buttonB.isPressed() || buttonC.isPressed() || buttonD.isPressed())
+            {
+                delay(10);
+            }
+            return;
+        }
     }
 }
 
@@ -98,6 +152,7 @@ void setup()
     Serial.begin(115200);
 
     pinMode(PIN_BUZZER, OUTPUT);
+    pinMode(PIN_LED, OUTPUT);
 
     timer.registerOnExpiredHandler(onTimerExpired);
 
@@ -134,6 +189,7 @@ void loop()
     buttonC.loop();
     buttonD.loop();
     buttonAC.loop();
+    buttonAB.loop();
 
     if (!timer.isRunning())
     {
