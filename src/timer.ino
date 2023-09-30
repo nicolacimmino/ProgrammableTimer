@@ -1,6 +1,5 @@
 
-#include <Wire.h>
-#include <TM1650.h>
+#include <TM1637Display.h>
 #include "timer.h"
 #include "button.h"
 #include "buttonPair.h"
@@ -11,6 +10,10 @@
 #define PIN_BTN_D A0
 #define PIN_BUZZER 3
 
+#define DISPLAY_CLK 6
+#define DISPLAY_DIO 5
+#define DISPLAY_COLON 128
+
 Button buttonA(PIN_BTN_A, onButtonAPressed);
 Button buttonB(PIN_BTN_B, onButtonBPressed);
 Button buttonC(PIN_BTN_C, onButtonCPressed);
@@ -19,7 +22,9 @@ ButtonPair buttonAC(PIN_BTN_A, PIN_BTN_C, onButtonACPressed);
 
 Timer timer;
 
-TM1650 display;
+TM1637Display display(DISPLAY_CLK, DISPLAY_DIO);
+
+uint8_t displayData[] = {0xff, 0xff, 0xff, 0xff};
 
 void onButtonACPressed()
 {
@@ -85,12 +90,12 @@ void onTimerExpired()
 void setup()
 {
     Serial.begin(115200);
-    Wire.begin();
-    display.init();
-    display.displayOn();
-    display.setBrightness(TM1650_MIN_BRIGHT);
+
     pinMode(PIN_BUZZER, OUTPUT);
+
     timer.registerOnExpiredHandler(onTimerExpired);
+
+    display.setBrightness(0x0f);
 }
 
 void printSeconds(uint16_t totalSeconds)
@@ -98,21 +103,18 @@ void printSeconds(uint16_t totalSeconds)
     uint8_t minutes = floor(totalSeconds / 60.0);
     uint8_t seconds = totalSeconds % 60;
 
-    char buf[5];
-
     bool dotOn = true;
     if (timer.isRunning() && millis() % 1000 < 500)
     {
         dotOn = false;
     }
 
-    buf[0] = (char)('0' + (minutes / 10));
-    buf[1] = (char)('0' + (minutes % 10)) | (dotOn ? 128 : 0);
-    buf[2] = (char)('0' + (seconds / 10));
-    buf[3] = (char)('0' + (seconds % 10));
-    buf[4] = 0;
+    displayData[0] = display.encodeDigit(minutes / 10);
+    displayData[1] = display.encodeDigit(minutes % 10) + (dotOn ? DISPLAY_COLON : 0);
+    displayData[2] = display.encodeDigit(seconds / 10);
+    displayData[3] = display.encodeDigit(seconds % 10);
 
-    display.displayString(buf);
+    display.setSegments(displayData);
 }
 
 void loop()
