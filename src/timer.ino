@@ -32,7 +32,6 @@ TM1637Display display(DISPLAY_CLK, DISPLAY_DIO);
 uint8_t displayData[] = {0xff, 0xff, 0xff, 0xff};
 
 bool mute = false;
-bool buttonPairAction = false;
 
 void onButtonPressed(uint8_t pressedMask)
 {
@@ -70,8 +69,7 @@ void onButtonACPressed()
     }
 
     timer.setTime(0);
-
-    buttonPairAction = true;
+    digitalWrite(PIN_LED, LOW);
 }
 
 void onButtonABPressed()
@@ -111,8 +109,6 @@ void onButtonABPressed()
     displayData[2] = 0b00000000;
     displayData[3] = 0b00000000;
     display.setSegments(displayData);
-
-    buttonPairAction = true;
 }
 
 void onButtonAPressed()
@@ -162,6 +158,8 @@ void onTimerExpired()
 {
     printSeconds(0);
     timer.setTime(0);
+    timer.setMode(MODE_COUNT_UP);
+    timer.start();
 
     unsigned long buzzStart = millis();
     unsigned long buzzingTime = 0;
@@ -175,6 +173,7 @@ void onTimerExpired()
             digitalWrite(PIN_BUZZER, LOW);
             digitalWrite(PIN_LED, LOW);
             delay(20);
+            printSeconds(timer.getTimeElapsed());
         }
 
         if (buttonSet.isAnyPressed())
@@ -183,9 +182,13 @@ void onTimerExpired()
             {
                 delay(10);
             }
+            timer.stop();
+            timer.setTime(0);
             return;
         }
     }
+
+    digitalWrite(PIN_LED, HIGH);
 }
 
 void setup()
