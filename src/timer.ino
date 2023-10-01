@@ -1,8 +1,7 @@
 
 #include <TM1637Display.h>
 #include "timer.h"
-#include "button.h"
-#include "buttonPair.h"
+#include "buttonSet.h"
 
 #define PIN_BTN_A 4
 #define PIN_BTN_B 7
@@ -15,12 +14,16 @@
 #define DISPLAY_DIO 5
 #define DISPLAY_COLON 128
 
-Button buttonA(PIN_BTN_A, onButtonAPressed);
-Button buttonB(PIN_BTN_B, onButtonBPressed);
-Button buttonC(PIN_BTN_C, onButtonCPressed);
-Button buttonD(PIN_BTN_D, onButtonDPressed);
-ButtonPair buttonAC(PIN_BTN_A, PIN_BTN_C, onButtonACPressed);
-ButtonPair buttonAB(PIN_BTN_A, PIN_BTN_B, onButtonABPressed);
+#define MASK_A 0b0001
+#define MASK_B 0b0010
+#define MASK_C 0b0100
+#define MASK_D 0b1000
+#define MASK_AB 0b0011
+#define MASK_AC 0b0101
+
+uint8_t buttonPins[] = {PIN_BTN_A, PIN_BTN_B, PIN_BTN_C, PIN_BTN_D};
+
+ButtonSet buttonSet;
 
 Timer timer;
 
@@ -30,6 +33,34 @@ uint8_t displayData[] = {0xff, 0xff, 0xff, 0xff};
 
 bool mute = false;
 bool buttonPairAction = false;
+
+void onButtonPressed(uint8_t pressedMask)
+{
+    Serial.println(pressedMask, 2);
+    switch (pressedMask)
+    {
+    case MASK_A:
+        onButtonAPressed();
+        break;
+    case MASK_B:
+        onButtonBPressed();
+        break;
+    case MASK_C:
+        onButtonCPressed();
+        break;
+    case MASK_D:
+        onButtonDPressed();
+        break;
+    case MASK_AB:
+        onButtonABPressed();
+        break;
+    case MASK_AC:
+        onButtonACPressed();
+        break;
+    default:
+        break;
+    }
+}
 
 void onButtonACPressed()
 {
@@ -63,6 +94,16 @@ void onButtonABPressed()
     }
 
     display.setSegments(displayData);
+
+    if (!mute)
+    {
+        digitalWrite(PIN_BUZZER, HIGH);
+        digitalWrite(PIN_LED, HIGH);
+        delay(10);
+        digitalWrite(PIN_BUZZER, LOW);
+        digitalWrite(PIN_LED, LOW);
+    }
+
     delay(1000);
 
     displayData[0] = 0b00000000;
@@ -136,9 +177,9 @@ void onTimerExpired()
             delay(20);
         }
 
-        if (buttonA.isPressed() || buttonB.isPressed() || buttonC.isPressed() || buttonD.isPressed())
+        if (buttonSet.isAnyPressed())
         {
-            while (buttonA.isPressed() || buttonB.isPressed() || buttonC.isPressed() || buttonD.isPressed())
+            while (buttonSet.isAnyPressed())
             {
                 delay(10);
             }
@@ -157,6 +198,8 @@ void setup()
     timer.registerOnExpiredHandler(onTimerExpired);
 
     display.setBrightness(0x0f);
+
+    buttonSet.setup(buttonPins, 4, onButtonPressed);
 }
 
 void printSeconds(uint16_t totalSeconds)
@@ -184,12 +227,7 @@ void printSeconds(uint16_t totalSeconds)
 
 void loop()
 {
-    buttonA.loop();
-    buttonB.loop();
-    buttonC.loop();
-    buttonD.loop();
-    buttonAC.loop();
-    buttonAB.loop();
+    buttonSet.loop();
 
     if (!timer.isRunning())
     {
