@@ -13,6 +13,7 @@ private:
     unsigned long startTimeMs = 0;
     unsigned long pauseTimeMs = 0;
     void (*onExpired)();
+    void (*onPreExpired)();
     uint8_t mode;
     uint16_t timeS;
     // Don't go past 59:59 for the countdown.
@@ -31,7 +32,7 @@ public:
     uint8_t getMode();
     uint16_t getTimeRemaining();
     uint16_t getTimeElapsed();
-    void registerOnExpiredHandler(void (*callback)());
+    void registerOnExpiredHandler(void (*onExpired)(),void (*onPreExpired)());
 };
 
 #endif

@@ -3,6 +3,7 @@
 Timer::Timer()
 {
     this->onExpired = NULL;
+    this->onPreExpired = NULL;
     this->mode = MODE_COUNT_DOWN;
 }
 
@@ -24,6 +25,14 @@ void Timer::loop()
         if (this->onExpired != NULL)
         {
             this->onExpired();
+        }
+    }
+
+    if (mode == MODE_COUNT_DOWN && this->getTimeRemaining() < 6)
+    {
+        if (this->onPreExpired != NULL)
+        {
+            onPreExpired();
         }
     }
 }
@@ -54,8 +63,9 @@ void Timer::pause()
 }
 
 void Timer::setTime(uint16_t seconds)
-{    
-    if(seconds > this->maxCountDownSeconds) {
+{
+    if (seconds > this->maxCountDownSeconds)
+    {
         return;
     }
 
@@ -67,9 +77,10 @@ void Timer::setMode(uint8_t mode)
     this->mode = mode;
 }
 
-void Timer::registerOnExpiredHandler(void (*callback)())
+void Timer::registerOnExpiredHandler(void (*onExpired)(), void (*onPreExpired)())
 {
-    this->onExpired = callback;
+    this->onExpired = onExpired;
+    this->onPreExpired = onPreExpired;
 }
 
 uint16_t Timer::getTimeRemaining()

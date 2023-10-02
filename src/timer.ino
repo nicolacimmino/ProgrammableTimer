@@ -178,6 +178,22 @@ void onButtonDPressed()
     }
 }
 
+void onTimerPreExpired()
+{
+    static unsigned long lastPreBeepTime = 0;
+
+    if (millis() - lastPreBeepTime < 1000)
+    {
+        return;
+    }
+
+    digitalWrite(PIN_BUZZER, mute ? LOW : HIGH);
+    delay(20);
+    digitalWrite(PIN_BUZZER, LOW);
+
+    lastPreBeepTime = millis();
+}
+
 void onTimerExpired()
 {
     printSeconds(0);
@@ -189,16 +205,18 @@ void onTimerExpired()
     unsigned long buzzingTime = 0;
     while ((buzzingTime = (millis() - buzzStart)) <= 4000)
     {
-        if ((buzzingTime / 1000) % 2 == 0)
+        if ((buzzingTime / 500) % 2 == 0)
         {
             digitalWrite(PIN_BUZZER, mute ? LOW : HIGH);
             digitalWrite(PIN_LED, HIGH);
-            delay(10);
+        }
+        else
+        {
             digitalWrite(PIN_BUZZER, LOW);
             digitalWrite(PIN_LED, LOW);
-            delay(20);
-            printSeconds(timer.getTimeElapsed());
         }
+
+        printSeconds(timer.getTimeElapsed());
 
         if (buttonSet.isAnyPressed())
         {
@@ -208,11 +226,13 @@ void onTimerExpired()
             }
             timer.stop();
             timer.setTime(0);
+            digitalWrite(PIN_BUZZER, LOW);
             return;
         }
     }
 
     digitalWrite(PIN_LED, HIGH);
+    digitalWrite(PIN_BUZZER, LOW);
 }
 
 void setup()
@@ -222,7 +242,7 @@ void setup()
     pinMode(PIN_BUZZER, OUTPUT);
     pinMode(PIN_LED, OUTPUT);
 
-    timer.registerOnExpiredHandler(onTimerExpired);
+    timer.registerOnExpiredHandler(onTimerExpired, onTimerPreExpired);
 
     display.setBrightness(0x07);
 
@@ -231,6 +251,8 @@ void setup()
 
 void printSeconds(uint16_t totalSeconds)
 {
+    uint16_t offsetInSecond = millis() % 1000;
+
     // Show hours:minutes from 1h onwards
     if (totalSeconds >= 3600)
     {
@@ -239,9 +261,10 @@ void printSeconds(uint16_t totalSeconds)
 
     uint8_t minutes = floor(totalSeconds / 60.0);
     uint8_t seconds = totalSeconds % 60;
+    
 
     bool dotOn = true;
-    if (timer.isRunning() && !timer.isPaused() && millis() % 1000 < 500)
+    if (timer.isRunning() && !timer.isPaused() && offsetInSecond < 500)
     {
         dotOn = false;
     }
@@ -253,7 +276,7 @@ void printSeconds(uint16_t totalSeconds)
 
     display.setSegments(displayData);
 
-    if (timer.isRunning() && !timer.isPaused() && millis() % 1000 < 60)
+    if (timer.isRunning() && !timer.isPaused() && offsetInSecond < 60)
     {
         digitalWrite(PIN_LED, !digitalRead(PIN_LED));
         delay(50);
