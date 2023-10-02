@@ -33,9 +33,33 @@ uint8_t displayData[] = {0xff, 0xff, 0xff, 0xff};
 
 bool mute = false;
 
+void onButtonLongPressed(uint8_t pressedMask)
+{
+    unsigned long longPressStart = millis();
+
+    while (buttonSet.isAnyPressed())
+    {
+        switch (pressedMask)
+        {
+        case MASK_A:
+            onButtonAPressed();
+            break;
+        case MASK_B:
+            onButtonBPressed();
+            break;
+        case MASK_C:
+            onButtonCPressed();
+            break;
+        }
+
+        refreshDisplay();
+
+        delay(max(2, 200 / (1 + (millis() - longPressStart) / 1000)));
+    }
+}
+
 void onButtonPressed(uint8_t pressedMask)
 {
-    Serial.println(pressedMask, 2);
     switch (pressedMask)
     {
     case MASK_A:
@@ -200,22 +224,24 @@ void setup()
 
     timer.registerOnExpiredHandler(onTimerExpired);
 
-    display.setBrightness(0x0f);
+    display.setBrightness(0x07);
 
-    buttonSet.setup(buttonPins, 4, onButtonPressed);
+    buttonSet.setup(buttonPins, 4, onButtonPressed, onButtonLongPressed);
 }
 
 void printSeconds(uint16_t totalSeconds)
 {
+    // Show hours:minutes from 1h onwards
+    if (totalSeconds >= 3600)
+    {
+        totalSeconds = totalSeconds / 60;
+    }
+
     uint8_t minutes = floor(totalSeconds / 60.0);
     uint8_t seconds = totalSeconds % 60;
 
     bool dotOn = true;
-    if (timer.isRunning() && millis() % 1000 < 500)
-    {
-        dotOn = false;
-    }
-    if (timer.isPaused() && millis() % 1000 < 900)
+    if (timer.isRunning() && !timer.isPaused() && millis() % 1000 < 500)
     {
         dotOn = false;
     }
@@ -228,10 +254,8 @@ void printSeconds(uint16_t totalSeconds)
     display.setSegments(displayData);
 }
 
-void loop()
+void refreshDisplay()
 {
-    buttonSet.loop();
-
     if (!timer.isRunning())
     {
         printSeconds(timer.getTimePreset());
@@ -247,6 +271,13 @@ void loop()
             printSeconds(timer.getTimeElapsed());
         }
     }
+}
+
+void loop()
+{
+    buttonSet.loop();
+
+    refreshDisplay();
 
     timer.loop();
 }

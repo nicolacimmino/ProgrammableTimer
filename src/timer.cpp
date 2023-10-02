@@ -54,7 +54,11 @@ void Timer::pause()
 }
 
 void Timer::setTime(uint16_t seconds)
-{
+{    
+    if(seconds > this->maxCountDownSeconds) {
+        return;
+    }
+
     this->timeS = seconds;
 }
 

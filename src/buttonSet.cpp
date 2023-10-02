@@ -1,8 +1,13 @@
 #include "buttonSet.h"
 
-void ButtonSet::setup(uint8_t *buttonPins, uint8_t size, void (*onPressed)(uint8_t pressedMask))
+void ButtonSet::setup(
+    uint8_t *buttonPins,
+    uint8_t size,
+    void (*onPressed)(uint8_t pressedMask),
+    void (*onLongPressed)(uint8_t pressedMask))
 {
     this->onPressed = onPressed;
+    this->onLongPressed = onLongPressed;
     this->buttonPins = buttonPins;
     this->buttons = size;
 
@@ -29,9 +34,22 @@ void ButtonSet::loop()
     this->waitingRelease = true;
 
     uint8_t pressedMask = this->getPressedMask();
+    unsigned long pressStart = millis();
     while (this->getPressedMask() >= pressedMask)
     {
-        pressedMask = this->getPressedMask();
+        uint8_t newPressedMask = this->getPressedMask();
+
+        if (newPressedMask > pressedMask)
+        {
+            pressStart = millis();
+        }
+
+        if (millis() - pressStart > 1000)
+        {
+            onLongPressed(pressedMask);
+        }
+
+        pressedMask = newPressedMask;
         delay(10);
     }
 
