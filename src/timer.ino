@@ -252,6 +252,13 @@ void printSeconds(uint16_t totalSeconds)
     displayData[3] = display.encodeDigit(seconds % 10);
 
     display.setSegments(displayData);
+
+    if (timer.isRunning() && !timer.isPaused() && millis() % 1000 < 60)
+    {
+        digitalWrite(PIN_LED, !digitalRead(PIN_LED));
+        delay(50);
+        digitalWrite(PIN_LED, !digitalRead(PIN_LED));
+    }
 }
 
 void refreshDisplay()
