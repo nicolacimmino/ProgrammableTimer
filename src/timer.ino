@@ -55,9 +55,9 @@ void onButtonLongPressed(uint8_t pressedMask)
 
 void onButtonPressed(uint8_t pressedMask)
 {
-    if (display.freezeDisplayUntil > 0)
+    if (display.isFrozen() > 0)
     {
-        display.freezeDisplayUntil = 0;
+        display.defrost();
         return;
     }
 
@@ -117,7 +117,7 @@ void onButtonBCPressed()
         display.showNumber(percentage);
     }
 
-    display.freezeDisplayUntil = millis() + 2000;
+    display.freeze(2 /* seconds */);
 }
 
 void onButtonACPressed()
@@ -154,7 +154,7 @@ void onButtonABPressed()
         blip();
     }
 
-    display.freezeDisplayUntil = millis() + 2000;
+    display.freeze(2 /* seconds */);
 }
 
 void onButtonAPressed()
@@ -281,14 +281,7 @@ void setup()
 }
 
 void refreshDisplay()
-{
-    if (millis() < display.freezeDisplayUntil)
-    {
-        return;
-    }
-
-    display.freezeDisplayUntil = 0;
-
+{ 
     if (!timer.isRunning())
     {
         display.printSeconds(timer.getTimePreset(), dotsOn());
@@ -311,7 +304,8 @@ void loop()
     buttonSet.loop();
 
     refreshDisplay();
-
+    display.loop();
+    
     if (timer.isRunning() && !timer.isPaused() && (millis() % 1000) < 60)
     {
         digitalWrite(PIN_LED, !digitalRead(PIN_LED));

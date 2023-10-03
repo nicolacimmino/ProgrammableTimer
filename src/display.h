@@ -20,13 +20,16 @@ class Display
 private:
     TM1637Display *display;
     uint8_t displayData[4];
-
-public:
     unsigned long freezeDisplayUntil = 0;
+public:    
     void setup();
+    void loop();
     void writeOnDisplay(uint8_t l0 = 0, uint8_t l1 = 0, uint8_t l2 = 0, uint8_t l3 = 0);
     void showNumber(uint16_t number);
     void printSeconds(uint16_t totalSeconds, bool dotOn);
+    void freeze(uint8_t seconds);
+    bool isFrozen();
+    void defrost();
 };
 
 #endif

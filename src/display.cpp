@@ -9,6 +9,13 @@ void Display::setup()
 
 void Display::writeOnDisplay(uint8_t l0 = 0, uint8_t l1 = 0, uint8_t l2 = 0, uint8_t l3 = 0)
 {
+    if (millis() < this->freezeDisplayUntil)
+    {
+        return;
+    }
+
+    this->freezeDisplayUntil = 0;
+
     displayData[0] = l0;
     displayData[1] = l1;
     displayData[2] = l2;
@@ -19,6 +26,13 @@ void Display::writeOnDisplay(uint8_t l0 = 0, uint8_t l1 = 0, uint8_t l2 = 0, uin
 
 void Display::showNumber(uint16_t number)
 {
+    if (millis() < this->freezeDisplayUntil)
+    {
+        return;
+    }
+
+    this->freezeDisplayUntil = 0;
+
     display->showNumberDec(number);
 }
 
@@ -33,10 +47,28 @@ void Display::printSeconds(uint16_t totalSeconds, bool dotOn)
     uint8_t minutes = floor(totalSeconds / 60.0);
     uint8_t seconds = totalSeconds % 60;
 
-    displayData[0] = display->encodeDigit(minutes / 10);
-    displayData[1] = display->encodeDigit(minutes % 10) + (dotOn ? DISPLAY_COLON : 0);
-    displayData[2] = display->encodeDigit(seconds / 10);
-    displayData[3] = display->encodeDigit(seconds % 10);
+    this->writeOnDisplay(
+        display->encodeDigit(minutes / 10),
+        display->encodeDigit(minutes % 10) + (dotOn ? DISPLAY_COLON : 0),
+        display->encodeDigit(seconds / 10),
+        display->encodeDigit(seconds % 10));
+}
 
-    display->setSegments(displayData);
+void Display::freeze(uint8_t seconds)
+{
+    this->freezeDisplayUntil = millis() + (seconds * 1000);
+}
+
+bool Display::isFrozen()
+{
+    return this->freezeDisplayUntil > 0;
+}
+
+void Display::defrost()
+{
+    this->freezeDisplayUntil = 0;
+}
+
+void Display::loop()
+{
 }
