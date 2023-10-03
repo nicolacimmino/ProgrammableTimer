@@ -20,6 +20,11 @@
 #define MASK_D 0b1000
 #define MASK_AB 0b0011
 #define MASK_AC 0b0101
+#define MASK_BC 0b0110
+
+#define LETTER_O 0b00111111
+#define LETTER_F 0b01110001
+#define LETTER_N 0b00110111
 
 uint8_t buttonPins[] = {PIN_BTN_A, PIN_BTN_B, PIN_BTN_C, PIN_BTN_D};
 
@@ -80,9 +85,35 @@ void onButtonPressed(uint8_t pressedMask)
     case MASK_AC:
         onButtonACPressed();
         break;
+    case MASK_BC:
+        onButtonBCPressed();
+        break;
     default:
         break;
     }
+}
+
+void onButtonBCPressed()
+{
+
+    // See this article for an in-depth explanation.
+    // https://provideyourown.com/2012/secret-arduino-voltmeter-measure-battery-voltage/
+    // tl;dr: we switch the ADC to measure the internal 1.1v reference using Vcc as reference, the rest is simple math.
+
+    ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
+
+    delay(2);
+    ADCSRA |= _BV(ADSC);
+    while (bit_is_set(ADCSRA, ADSC))
+        ;
+
+    long measuredVcc = 1125300L / (1 + (ADCL | (ADCH << 8)));
+
+    analogReference(DEFAULT);
+
+    display.showNumberDec(measuredVcc);
+
+    delay(2000);
 }
 
 void onButtonACPressed()
@@ -96,43 +127,40 @@ void onButtonACPressed()
     digitalWrite(PIN_LED, LOW);
 }
 
+void writeOnDisplay(uint8_t l0 = 0, uint8_t l1 = 0, uint8_t l2 = 0, uint8_t l3 = 0)
+{
+    displayData[0] = l0;
+    displayData[1] = l1;
+    displayData[2] = l2;
+    displayData[3] = l3;
+
+    display.setSegments(displayData);
+}
+
+void blip()
+{
+    digitalWrite(PIN_BUZZER, HIGH);
+    digitalWrite(PIN_LED, HIGH);
+    delay(10);
+    digitalWrite(PIN_BUZZER, LOW);
+    digitalWrite(PIN_LED, LOW);
+}
+
 void onButtonABPressed()
 {
     mute = !mute;
 
     if (mute)
     {
-        displayData[0] = 0b00111111; // O
-        displayData[1] = 0b01110001; // F
-        displayData[2] = 0b01110001; // F
-        displayData[3] = 0b00000000;
+        writeOnDisplay(LETTER_O, LETTER_F, LETTER_F);
     }
     else
     {
-        displayData[0] = 0b00111111; // O
-        displayData[1] = 0b00110111; // N
-        displayData[2] = 0b00000000;
-        displayData[3] = 0b00000000;
-    }
-
-    display.setSegments(displayData);
-
-    if (!mute)
-    {
-        digitalWrite(PIN_BUZZER, HIGH);
-        digitalWrite(PIN_LED, HIGH);
-        delay(10);
-        digitalWrite(PIN_BUZZER, LOW);
-        digitalWrite(PIN_LED, LOW);
+        writeOnDisplay(LETTER_O, LETTER_N);
+        blip();
     }
 
     delay(1000);
-
-    displayData[0] = 0b00000000;
-    displayData[1] = 0b00000000;
-    displayData[2] = 0b00000000;
-    displayData[3] = 0b00000000;
-    display.setSegments(displayData);
 }
 
 void onButtonAPressed()
@@ -182,14 +210,12 @@ void onTimerPreExpired()
 {
     static unsigned long lastPreBeepTime = 0;
 
-    if (millis() - lastPreBeepTime < 1000)
+    if (millis() - lastPreBeepTime < 1000 || mute)
     {
         return;
     }
 
-    digitalWrite(PIN_BUZZER, mute ? LOW : HIGH);
-    delay(20);
-    digitalWrite(PIN_BUZZER, LOW);
+    blip();
 
     lastPreBeepTime = millis();
 }
@@ -244,7 +270,7 @@ void setup()
 
     timer.registerOnExpiredHandler(onTimerExpired, onTimerPreExpired);
 
-    display.setBrightness(0x07);
+    display.setBrightness(7);
 
     buttonSet.setup(buttonPins, 4, onButtonPressed, onButtonLongPressed);
 }
@@ -261,7 +287,6 @@ void printSeconds(uint16_t totalSeconds)
 
     uint8_t minutes = floor(totalSeconds / 60.0);
     uint8_t seconds = totalSeconds % 60;
-    
 
     bool dotOn = true;
     if (timer.isRunning() && !timer.isPaused() && offsetInSecond < 500)
