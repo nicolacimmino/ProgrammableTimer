@@ -36,7 +36,7 @@ void Display::showNumber(uint16_t number)
     display->showNumberDec(number);
 }
 
-void Display::printSeconds(uint16_t totalSeconds, bool dotOn)
+void Display::printSeconds(uint16_t totalSeconds)
 {
     // Show hours:minutes from 1h onwards
     if (totalSeconds >= 3600)
@@ -49,7 +49,7 @@ void Display::printSeconds(uint16_t totalSeconds, bool dotOn)
 
     this->writeOnDisplay(
         display->encodeDigit(minutes / 10),
-        display->encodeDigit(minutes % 10) + (dotOn ? DISPLAY_COLON : 0),
+        display->encodeDigit(minutes % 10) + (this->dotsOn() ? DISPLAY_COLON : 0),
         display->encodeDigit(seconds / 10),
         display->encodeDigit(seconds % 10));
 }
@@ -71,4 +71,14 @@ void Display::defrost()
 
 void Display::loop()
 {
+}
+
+bool Display::dotsOn()
+{
+    if (this->blinkDots && (millis() % 1000) < 500)
+    {
+        return false;
+    }
+
+    return true;
 }

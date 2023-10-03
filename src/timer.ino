@@ -214,20 +214,9 @@ void onTimerPreExpired()
     lastPreBeepTime = millis();
 }
 
-bool dotsOn()
-{
-    bool dotsOn = true;
-    if (timer.isRunning() && !timer.isPaused() && (millis() % 1000) < 500)
-    {
-        dotsOn = false;
-    }
-
-    return dotsOn;
-}
-
 void onTimerExpired()
 {
-    display.printSeconds(0, dotsOn());
+    display.printSeconds(0);
     timer.setTime(0);
     timer.setMode(MODE_COUNT_UP);
     timer.start();
@@ -247,7 +236,7 @@ void onTimerExpired()
             digitalWrite(PIN_LED, LOW);
         }
 
-        display.printSeconds(timer.getTimeElapsed(), dotsOn());
+        display.printSeconds(timer.getTimeElapsed());
 
         if (buttonSet.isAnyPressed())
         {
@@ -281,20 +270,20 @@ void setup()
 }
 
 void refreshDisplay()
-{ 
+{
     if (!timer.isRunning())
     {
-        display.printSeconds(timer.getTimePreset(), dotsOn());
+        display.printSeconds(timer.getTimePreset());
     }
     else
     {
         if (timer.getMode() == MODE_COUNT_DOWN)
         {
-            display.printSeconds(timer.getTimeRemaining(), dotsOn());
+            display.printSeconds(timer.getTimeRemaining());
         }
         else
         {
-            display.printSeconds(timer.getTimeElapsed(), dotsOn());
+            display.printSeconds(timer.getTimeElapsed());
         }
     }
 }
@@ -305,7 +294,9 @@ void loop()
 
     refreshDisplay();
     display.loop();
-    
+
+    display.blinkDots = timer.isRunning() && !timer.isPaused();
+
     if (timer.isRunning() && !timer.isPaused() && (millis() % 1000) < 60)
     {
         digitalWrite(PIN_LED, !digitalRead(PIN_LED));
