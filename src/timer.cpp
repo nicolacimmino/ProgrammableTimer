@@ -28,7 +28,7 @@ void Timer::loop()
         }
     }
 
-    if (mode == MODE_COUNT_DOWN && this->getTimeRemaining() < 6)
+    if (!this->isPaused() && mode == MODE_COUNT_DOWN && this->getTimeRemaining() < 6)
     {
         if (this->onPreExpired != NULL)
         {

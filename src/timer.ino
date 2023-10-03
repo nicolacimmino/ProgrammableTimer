@@ -25,6 +25,8 @@
 #define LETTER_O 0b00111111
 #define LETTER_F 0b01110001
 #define LETTER_N 0b00110111
+#define LETTER_L 0b00111000
+#define LETTER_SPACE 0
 
 uint8_t buttonPins[] = {PIN_BTN_A, PIN_BTN_B, PIN_BTN_C, PIN_BTN_D};
 
@@ -37,6 +39,8 @@ TM1637Display display(DISPLAY_CLK, DISPLAY_DIO);
 uint8_t displayData[] = {0xff, 0xff, 0xff, 0xff};
 
 bool mute = false;
+
+unsigned long freezeDisplayUntil = 0;
 
 void onButtonLongPressed(uint8_t pressedMask)
 {
@@ -65,6 +69,12 @@ void onButtonLongPressed(uint8_t pressedMask)
 
 void onButtonPressed(uint8_t pressedMask)
 {
+    if (freezeDisplayUntil > 0)
+    {
+        freezeDisplayUntil = 0;
+        return;
+    }
+
     switch (pressedMask)
     {
     case MASK_A:
@@ -93,6 +103,16 @@ void onButtonPressed(uint8_t pressedMask)
     }
 }
 
+void writeOnDisplay(uint8_t l0 = 0, uint8_t l1 = 0, uint8_t l2 = 0, uint8_t l3 = 0)
+{
+    displayData[0] = l0;
+    displayData[1] = l1;
+    displayData[2] = l2;
+    displayData[3] = l3;
+
+    display.setSegments(displayData);
+}
+
 void onButtonBCPressed()
 {
 
@@ -107,13 +127,21 @@ void onButtonBCPressed()
     while (bit_is_set(ADCSRA, ADSC))
         ;
 
-    long measuredVcc = 1125300L / (1 + (ADCL | (ADCH << 8)));
-
     analogReference(DEFAULT);
 
-    display.showNumberDec(measuredVcc);
+    long measuredVcc = 1125300L / (1 + (ADCL | (ADCH << 8)));
 
-    delay(2000);
+    if (measuredVcc < 2780)
+    {
+        writeOnDisplay(LETTER_SPACE, LETTER_SPACE, LETTER_L, LETTER_O);
+    }
+    else
+    {
+        uint8_t percentage = min(100, (measuredVcc - 2700) / 3); // Range 3000->2700, delta 300, /3 => 0-100%
+        display.showNumberDec(percentage);
+    }
+
+    freezeDisplayUntil = millis() + 2000;
 }
 
 void onButtonACPressed()
@@ -125,16 +153,6 @@ void onButtonACPressed()
 
     timer.setTime(0);
     digitalWrite(PIN_LED, LOW);
-}
-
-void writeOnDisplay(uint8_t l0 = 0, uint8_t l1 = 0, uint8_t l2 = 0, uint8_t l3 = 0)
-{
-    displayData[0] = l0;
-    displayData[1] = l1;
-    displayData[2] = l2;
-    displayData[3] = l3;
-
-    display.setSegments(displayData);
 }
 
 void blip()
@@ -160,7 +178,7 @@ void onButtonABPressed()
         blip();
     }
 
-    delay(1000);
+    freezeDisplayUntil = millis() + 2000;
 }
 
 void onButtonAPressed()
@@ -311,6 +329,11 @@ void printSeconds(uint16_t totalSeconds)
 
 void refreshDisplay()
 {
+    if (millis() < freezeDisplayUntil)
+    {
+        return;
+    }
+
     if (!timer.isRunning())
     {
         printSeconds(timer.getTimePreset());
