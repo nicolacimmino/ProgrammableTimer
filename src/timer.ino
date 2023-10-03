@@ -334,6 +334,8 @@ void refreshDisplay()
         return;
     }
 
+    freezeDisplayUntil = 0;
+    
     if (!timer.isRunning())
     {
         printSeconds(timer.getTimePreset());
