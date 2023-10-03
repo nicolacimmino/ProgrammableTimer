@@ -11,13 +11,13 @@
 #define PIN_BUZZER 3
 #define PIN_LED A2
 
-#define MASK_A 0b0001
-#define MASK_B 0b0010
-#define MASK_C 0b0100
-#define MASK_D 0b1000
-#define MASK_AB 0b0011
-#define MASK_AC 0b0101
-#define MASK_BC 0b0110
+#define MASK_BUTTON_A 0b0001
+#define MASK_BUTTON_B 0b0010
+#define MASK_BUTTON_C 0b0100
+#define MASK_BUTTON_D 0b1000
+#define MASK_BUTTON_AB 0b0011
+#define MASK_BUTTON_AC 0b0101
+#define MASK_BUTTON_BC 0b0110
 
 uint8_t buttonPins[] = {PIN_BTN_A, PIN_BTN_B, PIN_BTN_C, PIN_BTN_D};
 
@@ -36,13 +36,13 @@ void onButtonLongPressed(uint8_t pressedMask)
     {
         switch (pressedMask)
         {
-        case MASK_A:
+        case MASK_BUTTON_A:
             onButtonAPressed();
             break;
-        case MASK_B:
+        case MASK_BUTTON_B:
             onButtonBPressed();
             break;
-        case MASK_C:
+        case MASK_BUTTON_C:
             onButtonCPressed();
             break;
         }
@@ -63,25 +63,25 @@ void onButtonPressed(uint8_t pressedMask)
 
     switch (pressedMask)
     {
-    case MASK_A:
+    case MASK_BUTTON_A:
         onButtonAPressed();
         break;
-    case MASK_B:
+    case MASK_BUTTON_B:
         onButtonBPressed();
         break;
-    case MASK_C:
+    case MASK_BUTTON_C:
         onButtonCPressed();
         break;
-    case MASK_D:
+    case MASK_BUTTON_D:
         onButtonDPressed();
         break;
-    case MASK_AB:
+    case MASK_BUTTON_AB:
         onButtonABPressed();
         break;
-    case MASK_AC:
+    case MASK_BUTTON_AC:
         onButtonACPressed();
         break;
-    case MASK_BC:
+    case MASK_BUTTON_BC:
         onButtonBCPressed();
         break;
     default:
@@ -133,7 +133,7 @@ void onButtonACPressed()
 
 void blip()
 {
-    digitalWrite(PIN_BUZZER, HIGH);
+    digitalWrite(PIN_BUZZER, !mute ? HIGH : LOW);
     digitalWrite(PIN_LED, HIGH);
     delay(10);
     digitalWrite(PIN_BUZZER, LOW);
@@ -144,16 +144,9 @@ void onButtonABPressed()
 {
     mute = !mute;
 
-    if (mute)
-    {
-        display.writeOnDisplay(LETTER_O, LETTER_F, LETTER_F);
-    }
-    else
-    {
-        display.writeOnDisplay(LETTER_O, LETTER_N);
-        blip();
-    }
+    (mute) ? display.writeOnDisplay(LETTER_O, LETTER_F, LETTER_F) : display.writeOnDisplay(LETTER_O, LETTER_N);
 
+    blip();
     display.freeze(2 /* seconds */);
 }
 
