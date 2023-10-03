@@ -91,21 +91,25 @@ void onButtonPressed(uint8_t pressedMask)
 
 void onButtonBCPressed()
 {
-
     // See this article for an in-depth explanation.
     // https://provideyourown.com/2012/secret-arduino-voltmeter-measure-battery-voltage/
     // tl;dr: we switch the ADC to measure the internal 1.1v reference using Vcc as reference, the rest is simple math.
 
     ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
 
-    delay(2);
-    ADCSRA |= _BV(ADSC);
-    while (bit_is_set(ADCSRA, ADSC))
-        ;
+    unsigned long measuredVcc = 0;
+    for (uint8_t ix = 0; ix < 10; ix++)
+    {
+        delay(20);
+        ADCSRA |= _BV(ADSC);
+        while (bit_is_set(ADCSRA, ADSC))
+            ;
+
+        measuredVcc += 1125300L / (1 + (ADCL | (ADCH << 8)));
+    }
+    measuredVcc = measuredVcc / 10;
 
     analogReference(DEFAULT);
-
-    long measuredVcc = 1125300L / (1 + (ADCL | (ADCH << 8)));
 
     if (measuredVcc < 2780)
     {
