@@ -213,11 +213,6 @@ void onTimerPreExpired()
 
 void onTimerExpired()
 {
-    display.printSeconds(0);
-    timer.setTime(0);
-    timer.setMode(MODE_COUNT_UP);
-    timer.start();
-
     unsigned long buzzStart = millis();
     unsigned long buzzingTime = 0;
     while ((buzzingTime = (millis() - buzzStart)) <= 4000)

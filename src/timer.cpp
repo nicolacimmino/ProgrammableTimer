@@ -19,9 +19,21 @@ void Timer::loop()
         return;
     }
 
-    if (mode == MODE_COUNT_DOWN && this->getTimeRemaining() == 0)
+    if (this->mode == MODE_COUNT_UP && this->expired && this->getTimeElapsed() % 60 == 0)
     {
-        this->stop();
+        if (this->onExpired != NULL)
+        {
+            this->onExpired();
+        }
+    }
+
+    if (this->mode == MODE_COUNT_DOWN && this->getTimeRemaining() == 0)
+    {
+        this->setTime(0);
+        this->mode = MODE_COUNT_UP;
+        this->start();
+        this->expired = true;
+
         if (this->onExpired != NULL)
         {
             this->onExpired();
@@ -49,12 +61,14 @@ void Timer::start()
 
     this->startTimeMs = millis();
     this->pauseTimeMs = 0;
+    this->expired = false;
 }
 
 void Timer::stop()
 {
     this->startTimeMs = 0;
     this->pauseTimeMs = 0;
+    this->expired = false;
 }
 
 void Timer::pause()

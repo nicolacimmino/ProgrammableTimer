@@ -19,6 +19,7 @@ private:
     // Don't go past 59:59 for the countdown.
     uint16_t maxCountDownSeconds = 3599;
 public:
+    bool expired = false;
     Timer();
     void loop();
     void start();
